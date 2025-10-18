@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Chats</h2>
+                <button id="new-chat-btn" class="new-chat-btn">+ New Chat</button>
+            </div>
+            <div id="chat-list" class="chat-list"></div>
+        </div>
+        
+        <div class="main-content">
+            <div id="chat-header" class="chat-header">
+                <h3>Select or create a new chat</h3>
+            </div>
+            
+            <div id="messages" class="messages"></div>
+            
+            <div class="input-area">
+                <textarea id="message-input" placeholder="Type your message here..." rows="1"></textarea>
+                <button id="send-btn" class="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
