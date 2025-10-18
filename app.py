@@ -3,6 +3,7 @@ from flask_cors import CORS
 from openai import OpenAI
 from database import Database
 import json
+import os
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
@@ -11,7 +12,7 @@ db = Database()
 
 client = OpenAI(
     base_url="https://integrate.api.nvidia.com/v1",
-    api_key="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"
+    api_key=os.environ.get('NVIDIA_API_KEY', '')
 )
 
 @app.route('/')
