@@ -1,0 +1,138 @@
+Auth0 for AI Agents Challenge
+Signed up
+View Entries 
+Secure AI agents, humans, and whatever comes next!
+
+Challenge Status:
+Live
+Submissions Due: October 26, 2025 23:59 PT
+We're excited to announce our newest challenge with Auth0, a leading authentication and authorization platform!
+
+Running through October 26, the Auth0 for AI Agents Challenge invites you to ship AI agents with built-in auth and security. Auth0 enables your AI agents to more securely access your tools, workflows, and users' data with fine-grained control and just a few lines of code.
+
+Whether you're building your first AI agents or your hundredth, this challenge is the perfect opportunity to explore the intersection of identity management and artificial intelligence.
+
+Prizes
+We'll select three winners for this challenge. Each winner will receive:
+
+$1,000 USD
+Exclusive DEV Badge
+DEV++ Membership
+All Participants with a valid submission will receive a completion badge on their DEV profile.
+
+How To Participate
+In order to participate, you will need to create an Auth0 account and publish a post using the submission template below.
+
+All projects must be deployed and functional. If your app requires logging in, please provide testing credentials in your submission and/or clear instructions on how to test your application for judges.
+
+Please review our judging criteria, rules, guidelines, and FAQ page before submitting so you understand our participation guidelines and official contest rules such as eligibility requirements.
+
+Key Dates
+Contest start: October 08, 2025
+Submissions due: October 26, 2025
+Winners announced: November 06, 2025
+Badge Rewards
+Auth0 Challenge Winner Badge
+Auth0 Challenge Winner Badge
+Auth0 Challenge Completion Badge
+Auth0 Challenge Completion Badge
+Find Out More
+Ask questions and share your ideas on the Auth0 for AI Agents Challenge Launch Post.
+
+View Launch Post 
+Sponsored by Auth0
+Auth0® takes a modern approach to identity and enables organizations to provide secure access to any application, for any user. Auth0 is a highly customizable product that is as simple as development teams want, and as flexible as they need. Safeguarding billions of login transactions each month, Auth0 delivers convenience, privacy, and security so customers can focus on innovation. Auth0 is a part of Okta, Inc., The World's Identity Company™.
+
+Learn More →
+Challenge Prompt
+Build an Agentic AI Application
+Your mission is to build an agentic AI application using Auth0 for AI Agents.
+
+Whether you're building conversational agents, autonomous systems, or intelligent automation tools, your AI agents need secure access to resources and services. Auth0 for AI will ensure you can:
+
+Authenticate the user: Secure the human who is prompting the agent in the first place.
+Control the tools: Manage which APIs your agent can call on the user's behalf with their Token Vault
+Limit knowledge: Apply fine-grained authorization directly to your RAG pipelines.
+Your submission should demonstrate how Auth0 for AI Agents enhances your application's security posture while enabling seamless interactions between AI agents and protected resources.
+
+The most compelling submissions will showcase practical use cases where secure AI agent authentication solves real-world problems!
+
+Submission Template 
+Judging Criteria:
+Use of underlying technology
+Project Use Case
+Usability and User Experience
+Creativity
+Helpful Links & Resources
+Get to know Auth0 through their documentation and resources:
+
+Auth0 for AI Agents Documentation
+How-To Guides
+MCP Authentication Guide
+Auth0 Developer Center
+Connect:
+Follow @auth0 on X
+LinkedIn
+GitHub
+Frequently Asked Questions
+Participation
+Can I submit to the challenge more than once?
+Yes, you can submit multiple submissions but you'll need to publish a separate post for each submission.
+
+Can I work on a team?
+Yes, you can work on teams of up to four people.
+
+If you collaborate with anyone, you'll need to list their DEV handles in your submission post so we can award a badge to your entire team! Please only publish one submission per team.
+DEV does not handle prize-splitting, so in the event that your submission wins the cash prize, you will need to split that amongst yourselves. Thank you for understanding!
+How old do I have to be to participate?
+Participants need to be 18+ in order to participate.
+
+If I live in X, am I eligible to participate?
+For eligibility rules, see our official challenge rules.
+
+Submission
+Can I update my submission after the submission due date?
+No, please do not update your submission during the judging period.
+
+Can my submission include open source code?
+Riffing on open source code and borrowing and improving on previous work/ideas is encouraged but it's important your changes are significant enough to ensure your submission is valid.
+
+When does riffing become plagiarism?
+It will depend, but transparency is important, license compatibility is important. You can use someone else's code to give you a jumpstart to demonstrate your ideas on top of someone else's base, but not just re-package the base. It should be clear to the judges what you added to the project in terms of the code and conceptual inspiration. This means, you should clearly state what you were building on and what elements are original to this new submission. When building on existing code, we expect a significant change that adds something tangible to the output. i.e. a new animation, and new sprite, a new function, a new presentation. Not just changes to the source - i.e. changing colours, changing one sprite, changing one function.
+
+What happens if my submission is considered plagiarized or invalid?
+Anything deemed to be plagiarism will not be eligible for prizes. Incidental plagiarism may simply result in your disqualification from the challenge (regardless of the number of other valid submissions you have published). Egregious plagiarism will result in your suspension from DEV entirely. Any non-generic, non-trivial usage of prior work, including open source code must be credited in your submission.
+
+Do submissions have to be in English?
+Non-english submissions are eligible for a completion badge but not eligible for prizes due to the current limitations of our judges. We will not be judging on mastery of the English language, so please don't let this deter you from submitting if you are not a native English speaker! We hope to evolve this in the future to be more accommodating.
+
+Do I need a license for my code?
+You are not required to license your code but we strongly recommend that you do. Here are some you may consider: MIT, Apache, BSD-2, BSD-3, or Commons Clause.
+
+Can I use AI?
+Use of AI is allowed as long as all other rules are followed. We want to give you a chance to show off your skills in realistic scenarios. If you use AI tools to help you achieve your submission, all the power to you.
+
+How do I embed my project directly into my DEV post?
+Our editor supports many types of embeds, including: Stackbliz, Glitch, Github, etc. You can typically use the {% embed https://... %} syntax directly in the post. Click here for more information on our markdown support.
+
+For CodePen, you will need to use this syntax: {% codepen http://... %}
+For CodeSandbox, you will need to use this syntax: {% codesandbox http://... %}
+Judging and Prizing
+Can there be ties?
+In the event of a tie in scoring between judges, the judges will select the entry that received the highest number of positive reactions on their DEV post to determine the winner.
+
+How will I know if I won?
+Winners will be announced in a DEV post on the winner announcement date noted in our key dates section.
+
+When will I receive my DEV badge?
+Both participation and winner badges will be awarded, in most cases, the same day as the winner announcement.
+
+When will I receive my prizes?
+The DEV Team will contact you via the email associated with your DEV profile within, at most, 10 business days of the announcement date to share the details of claiming your prizes.
+
+What steps do I need to take to receive my cash prize?
+The winner (including each member of a team) may be required to sign and return an affidavit of eligibility and publicity/liability release, and provide any additional tax filing information (such as a W-9, social security number or Federal tax ID number) within seven (7) business days following the date of your first email notification.
+
+Auth0 for AI Agents Challenge Rules
+NO PURCHASE NECESSARY. Open only to 18+. Contest entry period ends October 26, 2025 at 11:59 PM PDT. Contest is void where prohibited or restricted by law or regulation. All entries must be submitted during the contest period. For Official Rules, see Auth0 for AI Agents Challenge Contest Rules and General Contest Official Rules.
+
