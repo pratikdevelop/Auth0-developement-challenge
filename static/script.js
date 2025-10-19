@@ -1,9 +1,61 @@
 let currentChatId = null;
 let isStreaming = false;
+let currentUser = null;
+
+async function checkAuth() {
+    try {
+        const response = await fetch('/api/auth/user', {
+            credentials: 'include'
+        });
+        const data = await response.json();
+        
+        if (data.authenticated) {
+            currentUser = data.user;
+            showApp();
+            loadChats();
+        } else {
+            showLogin();
+        }
+    } catch (error) {
+        console.error('Error checking auth:', error);
+        showLogin();
+    }
+}
+
+function showApp() {
+    document.getElementById('auth-container').style.display = 'none';
+    document.getElementById('app-container').style.display = 'flex';
+    
+    if (currentUser) {
+        const userName = currentUser.name || currentUser.email || 'User';
+        document.getElementById('user-name').textContent = userName;
+    }
+}
+
+function showLogin() {
+    document.getElementById('auth-container').style.display = 'flex';
+    document.getElementById('app-container').style.display = 'none';
+}
+
+document.getElementById('login-btn').onclick = () => {
+    window.location.href = '/api/auth/login';
+};
+
+document.getElementById('logout-btn').onclick = () => {
+    window.location.href = '/api/auth/logout';
+};
 
 async function loadChats() {
     try {
-        const response = await fetch('/api/chats');
+        const response = await fetch('/api/chats', {
+            credentials: 'include'
+        });
+        
+        if (response.status === 401) {
+            showLogin();
+            return;
+        }
+        
         const chats = await response.json();
         
         const chatList = document.getElementById('chat-list');
@@ -39,8 +91,14 @@ async function createNewChat() {
         const response = await fetch('/api/chats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: 'New Chat' })
+            body: JSON.stringify({ title: 'New Chat' }),
+            credentials: 'include'
         });
+        
+        if (response.status === 401) {
+            showLogin();
+            return;
+        }
         
         const chat = await response.json();
         await loadChats();
@@ -58,7 +116,10 @@ async function deleteChat(chatId, event) {
     }
     
     try {
-        await fetch(`/api/chats/${chatId}`, { method: 'DELETE' });
+        await fetch(`/api/chats/${chatId}`, { 
+            method: 'DELETE',
+            credentials: 'include'
+        });
         
         if (currentChatId === chatId) {
             currentChatId = null;
@@ -76,7 +137,15 @@ async function loadChat(chatId) {
     currentChatId = chatId;
     
     try {
-        const response = await fetch(`/api/chats/${chatId}/messages`);
+        const response = await fetch(`/api/chats/${chatId}/messages`, {
+            credentials: 'include'
+        });
+        
+        if (response.status === 401) {
+            showLogin();
+            return;
+        }
+        
         const messages = await response.json();
         
         const messagesContainer = document.getElementById('messages');
@@ -150,8 +219,14 @@ async function sendMessage() {
         const response = await fetch(`/api/chats/${currentChatId}/messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message })
+            body: JSON.stringify({ message }),
+            credentials: 'include'
         });
+        
+        if (response.status === 401) {
+            showLogin();
+            return;
+        }
         
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -202,4 +277,4 @@ document.getElementById('message-input').addEventListener('input', function() {
     this.style.height = Math.min(this.scrollHeight, 150) + 'px';
 });
 
-loadChats();
+checkAuth();

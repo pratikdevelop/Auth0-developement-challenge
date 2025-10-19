@@ -3,13 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat</title>
+    <title>Secure AI Chat</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
+    <div id="auth-container" class="auth-container" style="display: none;">
+        <div class="auth-card">
+            <h1>Secure AI Chat</h1>
+            <p>A secure AI chat application with Auth0 authentication</p>
+            <button id="login-btn" class="login-btn">Login with Auth0</button>
+        </div>
+    </div>
+    
+    <div id="app-container" class="container" style="display: none;">
         <div class="sidebar">
             <div class="sidebar-header">
+                <div class="user-info">
+                    <div id="user-name" class="user-name"></div>
+                    <button id="logout-btn" class="logout-btn">Logout</button>
+                </div>
                 <h2>Chats</h2>
                 <button id="new-chat-btn" class="new-chat-btn">+ New Chat</button>
             </div>

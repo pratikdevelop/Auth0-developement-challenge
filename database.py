@@ -24,6 +24,11 @@ class Database:
             )
         ''')
         
+        cursor.execute("PRAGMA table_info(chats)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if 'user_id' not in columns:
+            cursor.execute('ALTER TABLE chats ADD COLUMN user_id TEXT DEFAULT "default_user"')
+        
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,27 +40,46 @@ class Database:
             )
         ''')
         
+        try:
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_chats_user_id ON chats(user_id)')
+        except sqlite3.OperationalError:
+            pass
+        
         conn.commit()
         conn.close()
     
-    def create_chat(self, title="New Chat"):
+    def create_chat(self, user_id, title="New Chat"):
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute('INSERT INTO chats (title) VALUES (?)', (title,))
+        cursor.execute('INSERT INTO chats (user_id, title) VALUES (?, ?)', (user_id, title))
         chat_id = cursor.lastrowid
         conn.commit()
         conn.close()
         return chat_id
     
-    def get_all_chats(self):
+    def get_all_chats(self, user_id):
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM chats ORDER BY created_at DESC')
+        cursor.execute(
+            'SELECT * FROM chats WHERE user_id = ? ORDER BY created_at DESC',
+            (user_id,)
+        )
         chats = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return chats
     
-    def get_chat_messages(self, chat_id):
+    def get_chat_owner(self, chat_id):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT user_id FROM chats WHERE id = ?', (chat_id,))
+        result = cursor.fetchone()
+        conn.close()
+        return result['user_id'] if result else None
+    
+    def get_chat_messages(self, chat_id, user_id):
+        if self.get_chat_owner(chat_id) != user_id:
+            return []
+        
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute(
@@ -66,7 +90,10 @@ class Database:
         conn.close()
         return messages
     
-    def add_message(self, chat_id, role, content):
+    def add_message(self, chat_id, role, content, user_id):
+        if self.get_chat_owner(chat_id) != user_id:
+            return None
+        
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute(
@@ -78,10 +105,14 @@ class Database:
         conn.close()
         return message_id
     
-    def delete_chat(self, chat_id):
+    def delete_chat(self, chat_id, user_id):
+        if self.get_chat_owner(chat_id) != user_id:
+            return False
+        
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM messages WHERE chat_id = ?', (chat_id,))
         cursor.execute('DELETE FROM chats WHERE id = ?', (chat_id,))
         conn.commit()
         conn.close()
+        return True
