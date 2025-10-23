@@ -61,6 +61,14 @@
             @apply bg-transparent p-0;
         }
         
+        /* Toggle switch styles */
+        .toggle-switch input:checked + .slider {
+            @apply bg-primary-500;
+        }
+        .toggle-switch input:checked + .slider:before {
+            transform: translateX(18px);
+        }
+
         /* Custom scrollbar */
         .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
@@ -134,15 +142,20 @@
 
         <!-- Main Content -->
         <div class="flex-1 flex flex-col">
-            <!-- Chat Header -->
+            Chat Header
             <div class="chat-header p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center gap-4">
+                <select class="model-selector bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white py-2 px-3 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="llama3-70b-instruct">Llama 3 70B Instruct (NVIDIA)</option>
+                    <option value="deepseek-coder">DeepSeek Coder</option>
+                    <option value="nvidia/llama-3.1-nemotron-nano-vl-8b-v1">Nemotron Vision 8B</option>
+                </select>
                 <div class="chat-title font-semibold text-lg text-gray-900 dark:text-white">Grok</div>
             </div>
 
             <!-- Messages Area -->
-            <div class="messages flex-1 p-6 overflow-y-auto flex flex-col gap-4 custom-scrollbar" id="messages">
+            <div class="messages flex-1 p-6 overflow-y-auto flex flex-col gap-4 custom-scrollbar">
                 <!-- Welcome State -->
-                <div class="welcome-state flex-1 flex flex-col items-center justify-center text-center p-6" id="welcome-state">
+                <div class="welcome-state flex-1 flex flex-col items-center justify-center text-center p-6">
                     <div class="welcome-icon text-5xl text-primary-500 mb-4">
                         <i class="fas fa-robot"></i>
                     </div>
@@ -150,7 +163,7 @@
                         Hello, I'm Grok!
                     </h1>
                     <p class="welcome-subtitle text-lg text-gray-600 dark:text-gray-300 max-w-lg mb-6">
-                        I'm here to answer your questions, analyze text documents, and provide helpful insights with a dash of wit. Upload a text file or type a message to get started!
+                        I'm here to answer your questions, analyze documents, and provide helpful insights with a dash of wit. Upload a file or type a message to get started!
                     </p>
                 </div>
             </div>
@@ -169,7 +182,7 @@
                     <!-- Input Container -->
                     <div class="input-container bg-gray-100 dark:bg-gray-700 rounded-lg p-3 border border-gray-300 dark:border-gray-600 focus-within:border-primary-500 transition-colors">
                         <div class="flex items-end gap-2">
-                            <input type="file" id="file-upload" class="hidden" accept=".txt,.pdf">
+                            <input type="file" id="file-upload" class="hidden" accept=".txt,.pdf,.jpg,.jpeg,.png">
                             <button class="upload-button bg-transparent border-none text-gray-500 dark:text-gray-400 cursor-pointer p-2 rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-gray-200">
                                 <i class="fas fa-paperclip"></i>
                             </button>
@@ -185,9 +198,16 @@
                         </div>
 
                         <!-- Input Footer -->
-                        <div class="input-footer flex justify-end items-center text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        <div class="input-footer flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            <div class="vision-toggle flex items-center gap-2">
+                                <span>Vision Mode</span>
+                                <label class="toggle-switch relative w-9 h-5">
+                                    <input type="checkbox" id="vision-toggle" class="sr-only">
+                                    <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-300 dark:bg-gray-600 transition rounded-full before:absolute before:content-[''] before:h-3.5 before:w-3.5 before:left-1 before:bottom-1 before:bg-white transition before:rounded-full"></span>
+                                </label>
+                            </div>
                             <div class="model-info">
-                                Using: <span id="current-model" class="font-medium">Grok</span>
+                                Using: <span id="current-model" class="font-medium">Llama 3 70B</span>
                             </div>
                         </div>
                     </div>
@@ -209,7 +229,7 @@
             isStreaming: false,
             currentUser: null,
             selectedFile: null,
-            currentModel: 'Grok',
+            currentModel: 'llama3-70b-instruct',
             retryCount: 0,
             maxRetries: 3
         };
@@ -219,8 +239,7 @@
             authContainer: document.getElementById('auth-container'),
             appContainer: document.getElementById('app-container'),
             chatHistory: document.querySelector('.chat-history'),
-            messagesContainer: document.getElementById('messages'),
-            welcomeState: document.getElementById('welcome-state'),
+            messagesContainer: document.querySelector('.messages'),
             messageInput: document.getElementById('message-input'),
             sendButton: document.getElementById('send-button'),
             newChatBtn: document.querySelector('.new-chat-btn'),
@@ -230,9 +249,12 @@
             fileNameSpan: document.querySelector('.file-name'),
             fileDisplay: document.querySelector('.file-display'),
             clearFileButton: document.querySelector('.clear-file-button'),
+            modelSelector: document.querySelector('.model-selector'),
+            visionToggle: document.getElementById('vision-toggle'),
             currentModelSpan: document.getElementById('current-model'),
             chatTitle: document.querySelector('.chat-title'),
-            darkModeToggle: document.getElementById('dark-mode-toggle')
+            darkModeToggle: document.getElementById('dark-mode-toggle'),
+            welcomeState: document.querySelector('.welcome-state')
         };
 
         // Dark Mode Management
@@ -267,7 +289,12 @@
             },
 
             updateModelInfo() {
-                elements.currentModelSpan.textContent = state.currentModel;
+                const modelNames = {
+                    'llama3-70b-instruct': 'Llama 3 70B',
+                    'deepseek-coder': 'DeepSeek Coder',
+                    'nvidia/llama-3.1-nemotron-nano-vl-8b-v1': 'Nemotron Vision 8B'
+                };
+                elements.currentModelSpan.textContent = modelNames[state.currentModel] || state.currentModel;
             },
 
             createMessageElement(role, content, isLoading = false) {
@@ -342,9 +369,6 @@
                 const messageElement = this.createMessageElement(role, content, isLoading);
                 elements.messagesContainer.appendChild(messageElement);
                 this.scrollToBottom();
-                if (!isLoading && elements.welcomeState) {
-                    elements.welcomeState.style.display = 'none'; // Hide welcome state after first message
-                }
                 return messageElement;
             },
 
@@ -353,6 +377,7 @@
                 elements.fileNameSpan.textContent = '';
                 elements.fileDisplay.classList.add('hidden');
                 elements.fileUpload.value = '';
+                elements.visionToggle.disabled = false;
             }
         };
 
@@ -393,7 +418,7 @@
                 if (elements.messageInput.value.trim()) {
                     formData.append('message', elements.messageInput.value.trim());
                 }
-                formData.append('use_vision', false);
+                formData.append('use_vision', elements.visionToggle.checked);
 
                 const response = await fetch(`/api/chats/${state.currentChatId}/upload`, {
                     method: 'POST',
@@ -402,8 +427,7 @@
                 });
 
                 if (!response.ok) throw new Error('Upload failed');
-                const data = await response.json();
-                this.finishMessage(assistantMessageDiv, data.content || 'No response');
+                this.streamResponse(assistantMessageDiv);
             },
 
             async handleTextMessage(assistantMessageDiv, message) {
@@ -415,8 +439,7 @@
                 });
 
                 if (!response.ok) throw new Error('Message send failed');
-                const data = await response.json();
-                this.finishMessage(assistantMessageDiv, data.content || 'No response');
+                this.streamResponse(assistantMessageDiv);
             },
 
             handleMessageError(error, retry, assistantMessageDiv) {
@@ -430,15 +453,54 @@
                 }
             },
 
+            streamResponse(assistantMessageDiv) {
+                const source = new EventSource(`/api/chats/${state.currentChatId}/messages`, { 
+                    withCredentials: true 
+                });
+                let fullResponse = '';
+
+                source.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.content) {
+                            fullResponse += data.content;
+                            assistantMessageDiv.querySelector('.message-text').innerHTML = 
+                                marked.parse(DOMPurify.sanitize(fullResponse));
+                            uiUtils.scrollToBottom();
+                        }
+                        if (data.done) {
+                            source.close();
+                            state.retryCount = 0;
+                            this.finishMessage(assistantMessageDiv, fullResponse);
+                        }
+                    } catch (e) {
+                        source.close();
+                        this.handleStreamError(assistantMessageDiv, fullResponse);
+                    }
+                };
+
+                source.onerror = () => {
+                    source.close();
+                    this.handleStreamError(assistantMessageDiv, fullResponse);
+                };
+            },
+
+            handleStreamError(assistantMessageDiv, fullResponse) {
+                if (state.retryCount < state.maxRetries) {
+                    state.retryCount++;
+                    uiUtils.showError(`Connection lost. Retrying (${state.retryCount}/${state.maxRetries})...`);
+                    setTimeout(() => this.handleSendMessage(true), 2000);
+                } else {
+                    uiUtils.showError('Streaming failed after retries. Please try again.');
+                    this.finishMessage(assistantMessageDiv, fullResponse, true);
+                }
+            },
+
             finishMessage(messageDiv, text, isError = false) {
                 const typingIndicator = messageDiv.querySelector('.typing-indicator');
                 if (typingIndicator) typingIndicator.remove();
 
                 if (!isError && text) {
-                    const messageText = messageDiv.querySelector('.message-text');
-                    if (messageText) {
-                        messageText.innerHTML = marked.parse(DOMPurify.sanitize(text));
-                    }
                     const messageActions = uiUtils.createMessageActions();
                     messageDiv.querySelector('.message-content').insertAdjacentHTML('beforeend', messageActions);
                     uiUtils.attachCopyHandler(messageDiv, text);
@@ -485,7 +547,7 @@
                     state.selectedFile = file;
                     elements.fileNameSpan.textContent = file.name;
                     elements.fileDisplay.classList.remove('hidden');
-                    elements.fileUpload.accept = ".txt,.pdf"; // Restrict to text/PDF only
+                    elements.visionToggle.disabled = !file.name.match(/\.(pdf|png|jpg|jpeg)$/i);
                 } else {
                     uiUtils.clearFileSelection();
                 }
@@ -608,6 +670,7 @@
             authManager.checkAuth();
             uiUtils.updateModelInfo();
             await chatManager.loadChatHistory();
+
         }
 
         function setupEventListeners() {
@@ -635,6 +698,12 @@
             
             elements.logoutBtn.addEventListener('click', () => {
                 window.location.href = '/api/auth/logout';
+            });
+
+            // Model selection
+            elements.modelSelector.addEventListener('change', (e) => {
+                state.currentModel = e.target.value;
+                uiUtils.updateModelInfo();
             });
 
             // Auto-resize textarea

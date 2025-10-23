@@ -50,7 +50,7 @@ Click **Save Changes** at the bottom!
 | `AUTH0_DOMAIN` | From Auth0 Settings (like `dev-abc123.us.auth0.com`) |
 | `AUTH0_CLIENT_ID` | From Auth0 Settings |
 | `AUTH0_CLIENT_SECRET` | From Auth0 Settings (click to reveal) |
-| `NVIDIA_API_KEY` | The key you provided earlier: `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` |
+| `NVIDIA_API_KEY` | Your NVIDIA API Key |
 | `SECRET_KEY` | Any random string (e.g., `my-super-secret-key-12345`) |
 
 ## Step 4: Test the App!
@@ -62,6 +62,16 @@ Click **Save Changes** at the bottom!
 5. Click **"Login with Auth0"**
 6. Create an account or login
 7. Start chatting with the AI!
+
+## Step 5: Using the File Upload Feature
+
+This application supports uploading `.txt` and `.pdf` files to enhance the AI's knowledge base for your chats. Here's how to use it:
+
+1.  **Select a Chat**: Ensure you have an active chat selected in the sidebar. If not, create a new chat.
+2.  **Click Upload Button**: Click the "Upload File" button (paperclip icon) next to the message input field.
+3.  **Choose File**: Select a `.txt` or `.pdf` file from your local machine.
+4.  **File Processing**: The file will be uploaded, and its content will be extracted. For `.txt` files, text is read directly. For `.pdf` files, text is extracted page by page.
+5.  **AI Integration**: The extracted text will be used to augment the AI's responses within that specific chat, providing context from your uploaded documents.
 
 ## Troubleshooting
 
@@ -96,3 +106,17 @@ Once everything is working:
 5. Include setup instructions and explain how you implemented the 3 security requirements
 
 Good luck with the challenge! 🚀
+
+## Step 5: Run the Application (for Deployment)
+
+To run the application in a production environment using Gunicorn, navigate to the project root directory in your terminal and execute:
+
+```bash
+gunicorn --bind 0.0.0.0:8000 app:app
+```
+
+This will start the Gunicorn server on port 8000, making your Flask application accessible.
+
+## Fine-Grained Authorization for RAG Pipelines
+
+This application implements fine-grained authorization for Retrieval Augmented Generation (RAG) pipelines by ensuring that each user's chat history is securely isolated. The `database.py` module stores chat messages associated with a unique `user_id`, which is securely retrieved from the Auth0 session in `app.py`. This design prevents unauthorized access to sensitive chat data, as AI agents (and users) can only retrieve and interact with chat histories belonging to their authenticated `user_id`. This is visually reinforced in the UI with the "Securely Personalized" indicator next to the username.

@@ -7,29 +7,28 @@ import tempfile
 from datetime import datetime
 import logging
 
-from langchain_google_genai import ChatGoogleGenerativeAI
 from flask import Flask, request, jsonify, Response, stream_with_context, session, redirect, url_for
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from openai import OpenAI, OpenAIError
 from werkzeug.utils import secure_filename
+from tenacity import retry, stop_after_attempt, wait_fixed
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
-
-# LangChain core messages for prompt construction
-from langchain_core.messages import SystemMessage, HumanMessage
+# LangChain integrations (latest modular imports)
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_xai import ChatXAI
+from langchain_deepseek import ChatDeepSeek
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.output_parsers import StrOutputParser
-
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Print API key for debugging (remove in production)
-logger.info(f"GEMINI_API_KEY loaded: {'Yes' if os.getenv('GEMINI_API_KEY') else 'No'}")
-
+print(os.getenv('NVIDIA_API_KEY'))
 # PDF processing imports
 try:
     from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
@@ -56,6 +55,7 @@ try:
     from auth import init_auth, requires_auth, get_user
     CUSTOM_MODULES_AVAILABLE = True
 except ImportError:
+    
     logger.warning("Custom modules (database, auth) not available. Running in demo mode.")
 
 # Configuration
@@ -146,28 +146,49 @@ else:
     db = Database()
     oauth = init_auth(app)
 
-# Gemini-only LLM client
-def get_llm_client(model_name="gemini-2.5-flash-lite"):
-    gemini_api_key = os.getenv("GEMINI_API_KEY")
-    if not gemini_api_key:
-        raise ValueError("GEMINI_API_KEY not set. Get one from https://aistudio.google.com/app/apikey")
-    
-    return ChatGoogleGenerativeAI(
-        model=model_name,  # Updated to Gemini 2.5 Flash-Lite
-        google_api_key=gemini_api_key,
-        temperature=0.7,
-        top_p=0.9,
-        max_tokens=1024,
-    )
+# LangChain Clients Factory
+def get_llm_client(model_name):
+    if "nvidia" in model_name.lower() or "llama" in model_name.lower():
+        return ChatNVIDIA(
+            model=model_name,
+            api_key=os.environ.get("NVIDIA_API_KEY"),
+            temperature=0.7,
+            top_p=0.9,
+            max_tokens=1024,
+        )
+    elif "grok" in model_name.lower() or "xai" in model_name.lower():
+        return ChatXAI(
+            model=model_name,
+            api_key=os.environ.get("XAI_API_KEY"),
+            temperature=0.7,
+            top_p=0.9,
+            max_tokens=1024,
+        )
+    elif "deepseek" in model_name.lower():
+        return ChatDeepSeek(
+            model=model_name,
+            api_key=os.environ.get("DEEPSEEK_API_KEY"),
+            temperature=0.7,
+            top_p=0.9,
+            max_tokens=1024,
+        )
+    else:
+        raise ValueError(f"Unsupported model: {model_name}")
 
-# Gemini-like system prompt
+# Raw OpenAI for vision
+vision_client = OpenAI(
+    base_url="https://api.nvcf.nvidia.com/v2/nvcf/",
+    api_key=os.environ.get("NVIDIA_API_KEY")
+)
+
+# Grok-like system prompt
 SYSTEM_PROMPT = """
-You are Gemini, created by Google. Your role is to provide clear, accurate, and helpful answers to user questions. Use a friendly, conversational tone with a touch of wit. Adapt your response length and depth to the query: keep it concise for simple questions and provide detailed reasoning for complex ones. Use provided chat history or file content to inform your answers. If a file is uploaded, summarize or analyze its content to address the user's request. If you don't know the answer, admit it and suggest alternatives. Stay focused on the user's query and avoid irrelevant details.
+You are Grok, created by xAI. Your role is to provide clear, accurate, and helpful answers to user questions. Use a friendly, conversational tone with a touch of wit. Adapt your response length and depth to the query: keep it concise for simple questions and provide detailed reasoning for complex ones. Use provided chat history or file content to inform your answers. If a file is uploaded, summarize or analyze its content to address the user's request. If you don't know the answer, admit it and suggest alternatives. Stay focused on the user's query and avoid irrelevant details.
 """
 
 # Title generator (Runnable pipeline)
-def get_title_chain():
-    llm = get_llm_client()
+def get_title_chain(model_name):
+    llm = get_llm_client(model_name)
     prompt = ChatPromptTemplate.from_messages([
         ("system", "Summarize this message into a concise chat title (max 50 characters):"),
         ("human", "{input}")
@@ -181,7 +202,7 @@ def get_user_id():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# File extraction functions (text-only; vision disabled)
+# File extraction functions
 def extract_text_from_pdf(filepath):
     if not PDF_MINER_AVAILABLE:
         raise Exception("PDF processing requires pdfminer.six")
@@ -202,6 +223,65 @@ def extract_text_from_pdf(filepath):
         logger.error(f"PDF processing error: {str(e)}")
         raise Exception(f"Failed to process PDF: {str(e)}")
 
+def process_image_with_vision(file_content, filename):
+    try:
+        img_str = base64.b64encode(file_content).decode('utf-8')
+        completion = vision_client.chat.completions.create(
+            model="nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_str}"}},
+                        {"type": "text", "text": "Extract text or describe the content of this image clearly and concisely."}
+                    ]
+                }
+            ],
+            temperature=0.2,
+            top_p=0.1,
+            max_tokens=1024
+        )
+        return completion.choices[0].message.content
+    except OpenAIError as e:
+        logger.error(f"Image processing error: {str(e)}")
+        raise Exception(f"Failed to process image: {str(e)}")
+
+def extract_text_with_vision_model(file_content, filename):
+    if not PDF2IMAGE_AVAILABLE:
+        raise Exception("Vision processing requires pdf2image")
+    try:
+        num_pages = len(list(PDFPage.get_pages(BytesIO(file_content))))
+        images = convert_from_bytes(file_content, first_page=1, last_page=min(3, num_pages))
+        if num_pages > 3:
+            logger.warning(f"PDF has {num_pages} pages, processing only first 3.")
+        extracted_texts = []
+        for i, image in enumerate(images):
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            completion = vision_client.chat.completions.create(
+                model="nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_str}"}},
+                            {"type": "text", "text": "Extract all text from this document page. Return only the text."}
+                        ]
+                    }
+                ],
+                temperature=0.2,
+                top_p=0.1,
+                max_tokens=2048
+            )
+            extracted_texts.append(f"--- Page {i+1} ---\n{completion.choices[0].message.content}")
+        return "\n\n".join(extracted_texts)
+    except OpenAIError as e:
+        logger.error(f"PDF vision processing error: {str(e)}")
+        raise Exception(f"Failed to process PDF with vision model: {str(e)}")
+
 def extract_text_from_file(file_content, filename, use_vision_model=False):
     file_extension = filename.rsplit('.', 1)[1].lower()
     if file_extension == 'txt':
@@ -216,7 +296,14 @@ def extract_text_from_file(file_content, filename, use_vision_model=False):
         except Exception as e:
             logger.error(f"Text file error: {str(e)}")
             raise Exception(f"Failed to process text file: {str(e)}")
+    elif file_extension in ['png', 'jpg', 'jpeg']:
+        return process_image_with_vision(file_content, filename)
     elif file_extension == 'pdf':
+        if use_vision_model and PDF2IMAGE_AVAILABLE:
+            try:
+                return extract_text_with_vision_model(file_content, filename)
+            except Exception as vision_error:
+                logger.warning(f"Vision extraction failed: {vision_error}")
         if not PDF_MINER_AVAILABLE:
             raise Exception("PDF processing requires pdfminer.six")
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
@@ -232,8 +319,8 @@ def extract_text_from_file(file_content, filename, use_vision_model=False):
     else:
         raise Exception(f"Unsupported file type: {file_extension}")
 
-# Replace the existing generate_llm_response function in app.py
-def generate_llm_response(chat_id, user_id, messages, model_name="gemini-2.5-flash-lite"):
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
+def generate_llm_response(chat_id, user_id, messages, model_name):
     try:
         logger.debug(f"Sending LLM request with model: {model_name}, messages count: {len(messages)}")
         llm = get_llm_client(model_name)
@@ -247,23 +334,30 @@ def generate_llm_response(chat_id, user_id, messages, model_name="gemini-2.5-fla
                 content = chunk.content if hasattr(chunk, 'content') else chunk
                 if content:
                     full_response += content
+                    yield f"data: {json.dumps({'content': content})}\n\n"
         else:
             response = llm.invoke(langchain_messages)
             content = response.content if hasattr(response, 'content') else response
             full_response += content
-        logger.debug(f"Full LLM response: {full_response[:200]}...")
+            yield f"data: {json.dumps({'content': content})}\n\n"
+        logger.debug(f"Full LLM response: {full_response[:200]}...")  # Truncated log
         db.add_message(chat_id, 'assistant', full_response, user_id)
-        return jsonify({'content': full_response, 'done': True})
+        yield f"data: {json.dumps({'done': True})}\n\n"
     except Exception as e:
         logger.error(f"LLM streaming error for {model_name}: {str(e)}")
-        return jsonify({'error': f'LLM error ({model_name}): {str(e)})'}), 500
+        yield f"data: {json.dumps({'error': f'LLM error ({model_name}): {str(e)}'})}\n\n"
+
 # Routes
 @app.route('/')
 def index():
     user = get_user()
     if not user:
-        return app.send_static_file('new_landing_page.html')
-    return redirect(url_for('chat'))
+        return redirect(url_for('landing_page'))
+    return app.send_static_file('index.html')
+
+@app.route('/landing_page')
+def landing_page():
+    return app.send_static_file('new_landing_page.html')
 
 @app.route('/chat')
 def chat():
@@ -327,10 +421,10 @@ def create_chat():
     data = request.get_json(silent=True) or {}
     title = data.get('title', 'New Chat')
     initial_message = data.get('initial_message')
-    model_name = 'gemini-2.5-flash-lite'  # Updated to Gemini 2.5 Flash-Lite
+    model_name = data.get('model', 'llama3-70b-instruct')  # From request
     if initial_message:
         try:
-            title_gen = get_title_chain()
+            title_gen = get_title_chain(model_name)
             title = title_gen.invoke({"input": initial_message})[:50]
         except Exception as e:
             logger.warning(f"Failed to generate chat title: {e}")
@@ -360,7 +454,7 @@ def send_message(chat_id):
     if not data:
         return jsonify({'error': 'Invalid JSON'}), 400
     user_message = data.get('message')
-    model_name = 'gemini-2.5-flash-lite'
+    model_name = data.get('model', 'llama3-70b-instruct')  # From frontend dropdown
     if not user_message:
         return jsonify({'error': 'Message is required'}), 400
     if not isinstance(user_message, str):
@@ -372,7 +466,11 @@ def send_message(chat_id):
         return jsonify({'error': 'Chat not found or access denied'}), 403
     chat_messages = db.get_chat_messages(chat_id, user_id)
     api_messages = [{'role': msg['role'], 'content': msg['content']} for msg in chat_messages]
-    return generate_llm_response(chat_id, user_id, api_messages, model_name)
+    return Response(
+        stream_with_context(generate_llm_response(chat_id, user_id, api_messages, model_name)),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'Connection': 'keep-alive'}
+    )
 
 @app.route('/api/chats/<int:chat_id>/upload', methods=['POST'])
 @requires_auth
@@ -394,8 +492,8 @@ def upload_file(chat_id):
         f.write(file_content)
     try:
         user_message = request.form.get('message', '').strip()
-        use_vision_model = False
-        model_name = 'gemini-2.5-flash-lite'
+        use_vision_model = request.form.get('use_vision', 'false').lower() == 'true'
+        model_name = request.form.get('model', 'llama3-70b-instruct')  # From form or default
         extracted_content = extract_text_from_file(file_content, file.filename, use_vision_model)
         if not extracted_content and not user_message:
             return jsonify({'error': 'No content extracted and no message provided'}), 400
@@ -408,20 +506,28 @@ def upload_file(chat_id):
                 combined_message += f"\n\nDocument ({file.filename}): {extracted_content}"
         message_id = db.add_message(chat_id, 'user', combined_message, user_id)
         if not message_id:
-            return jsonify({'error': 'Chat not found or access denied'}), 400
+            return jsonify({'error': 'Chat not found or access denied'}), 403
         chat_messages = db.get_chat_messages(chat_id, user_id)
         api_messages = [{'role': msg['role'], 'content': msg['content']} for msg in chat_messages]
-        return generate_llm_response(chat_id, user_id, api_messages, model_name)
+        return Response(
+            stream_with_context(generate_llm_response(chat_id, user_id, api_messages, model_name)),
+            mimetype='text/event-stream',
+            headers={'Cache-Control': 'no-cache', 'Connection': 'keep-alive'}
+        )
     except Exception as e:
         logger.error(f"File upload error: {str(e)}")
         return jsonify({'error': str(e)}), 400
     finally:
         if os.path.exists(secure_path):
             os.remove(secure_path)
+
 @app.route('/api/models')
 def get_models():
     return jsonify([
-        {'id': 'gemini-2.5-flash-lite', 'name': 'Gemini 2.5 Flash-Lite (Google)', 'description': 'Fast, cost-efficient conversational AI', 'type': 'text', 'provider': 'google'}
+        {'id': 'llama3-70b-instruct', 'name': 'Llama 3 70B Instruct (NVIDIA)', 'description': 'Fast text model', 'type': 'text', 'provider': 'nvidia'},
+        
+        {'id': 'deepseek-coder', 'name': 'DeepSeek Coder', 'description': 'Code-focused model', 'type': 'text', 'provider': 'deepseek'},
+        {'id': 'nvidia/llama-3.1-nemotron-nano-vl-8b-v1', 'name': 'Nemotron Vision 8B', 'description': 'Multimodal model', 'type': 'vision', 'provider': 'nvidia'}
     ])
 
 @app.route('/api/health')
@@ -432,11 +538,13 @@ def health_check():
         'pdf_miner_available': PDF_MINER_AVAILABLE,
         'pdf2image_available': PDF2IMAGE_AVAILABLE,
         'langchain_providers': {
-            'google': bool(os.getenv("GEMINI_API_KEY")),
+            'nvidia': bool(os.environ.get("NVIDIA_API_KEY")),
+            'xai': bool(os.environ.get("XAI_API_KEY")),
+            'deepseek': bool(os.environ.get("DEEPSEEK_API_KEY")),
         },
         'features': {
             'file_upload': True,
-            'vision_processing': False,  # Disabled
+            'vision_processing': PDF2IMAGE_AVAILABLE,
             'streaming': True,
             'langchain': True,
             'authentication': CUSTOM_MODULES_AVAILABLE
@@ -459,8 +567,8 @@ def internal_error(error):
     return jsonify({'error': 'Internal Server Error', 'message': str(error)}), 500
 
 if __name__ == '__main__':
-    logger.info("Starting AI Chat Application with Gemini 2.5 Flash-Lite (Google) only...")
+    logger.info("Starting AI Chat Application with LangChain Runnable API...")
     logger.info(f"Demo Mode: {not CUSTOM_MODULES_AVAILABLE}")
     logger.info(f"PDF Miner Available: {PDF_MINER_AVAILABLE}")
-    logger.info(f"Vision Processing Available: {False}")
+    logger.info(f"Vision Processing Available: {PDF2IMAGE_AVAILABLE}")
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -1,0 +1,114 @@
+Technical assessment  
+
+Hi there! 
+
+Welcome to the first round of our recruitment process! Here we’re looking to understand the candidate's 
+thought process, coding ability, documentation skill and problem-solving approach. Please find the 
+details of the assessment below. 
+
+-  You have 7 days (168 hours) from the receipt of this document to submit your deliverables via 
+
+this form [https://forms.gle/7vJGVrFT5kCzNJ7p6] 
+
+-  Please Note: Contents of this document are confidential. You are not allowed to share this 
+
+document with the outside world. 
+
+Problem Statement 
+
+Build a Personal Budget Tracker application where users can track their income, expenses, and overall 
+budget. For reference: Monthly Budget 
+The application will allow users to: 
+Add categories, income and expense entries. 
+View their financial summary (total income, total expenses, and balance). 
+Categorize income and expenses (e.g., salary, groceries, entertainment). 
+Set a monthly budget and compare it against the actual expenses. 
+
+This application should consist of: 
+Backend - Django + Django REST Framework – Handle the financial data, authentication, and provide 
+API endpoints to interact with the frontend. 
+Frontend - React/Angular – Create a user interface to allow users to manage their finances, track their 
+budget, and visualize their financial data. 
+
+Authentication: 
+Implement Django Rest Framework authentication so users can log in and manage their financial data 
+securely. 
+Only authenticated users can add transactions and set/view budgets. 
+Other actions like user registration (test account credentials to be put in the document), forgot 
+password, profile management, etc., are not required. 
+
+UI should have 
+Login Page 
+Dashboard where users can see a summary of their finances (D3.js Chart required) 
+Transaction Management - Forms to add, edit and delete transactions 
+Transaction Overview - Display a list of all transactions (add pagination). Allow users to filter 
+transactions by date or category or amount. 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Budget Management - Display the user’s budget for the current month and compare it to their actual 
+expenses. (D3.js Chart required) 
+
+Instructions 
+
+●  Feel free to use any UI designs you can think of.  
+●  The codebase should be hosted in a public Git repo. 
+●  Kindly submit the deliverables within the mentioned timeframe. 
+●  You’re welcome to use LLMs to assist with your coding, but make sure to clearly attribute their 
+
+contributions in your documentation. It's crucial that you fully understand everything you include 
+in your codebase. If you're shortlisted for further interview rounds, be prepared for in-depth 
+questioning on every part of it. 
+
+●  You may use any publicly available libraries to finish the task as long as you acknowledge them 
+
+in the documentation. 
+
+●  Please mention the credentials to access the platform in the documentation file, else we would 
+
+not be able to review the submission. 
+
+●  You're welcome to make reasonable feature assumptions as needed to develop the application, 
+
+just be sure to document them in the accompanying documentation file. 
+
+Deliverables 
+
+●  Link to the static hosted page. Please use any free platforms like vercel, github to host your 
+
+page. 
+
+●  Link to the DRF Browsable API Page. Please use any free platform to host. 
+●  Link to the public Git repo (Fronted + Backend) of the codebase. 
+●  Please ensure that the hosted application or API page remains accessible and functional for at 
+
+least 20 to 30 days from the submission date. 
+
+●  Kindly use the form to upload the deliverables. Please feel free to email us in case of any other 
+
+queries. 
+
+●  Selected candidates from this round will be intimated after all submissions have been reviewed. 
+As we typically receive a high volume of entries, this may take some time. Rest assured, we will 
+get back to you with the outcome, regardless of the result. 
+
+●  We take plagiarism very seriously and hence please don't directly copy-paste code from 
+
+somewhere else without linking it to the source or giving the source due credit. We will run the 
+codebase through an internal plagiarism code checker during code evaluation. 
+
+Good Luck! 
+
+ 
+ 
+ 
+ 
+ 
+ 
+

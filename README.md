@@ -7,17 +7,17 @@ A secure, authenticated AI chat application built with Flask, Auth0, and NVIDIA 
 - **🔐 Auth0 Authentication**: Secure user login and session management
 - **🤖 NVIDIA AI Integration**: Powered by Meta's Llama 3.2 model via NVIDIA API
 - **💬 Multi-Chat Support**: Create and manage multiple chat conversations
-- **📝 Chat History**: All conversations are persisted in SQLite database
+- **📁 File Upload**: Upload `.txt` and `.pdf` files for RAG pipeline processing
 - **🔄 Real-time Streaming**: AI responses stream in real-time
-- **👤 User-specific Chats**: Each user has their own isolated chat history
+- **👤 User-specific Chats**: Each user has their own securely isolated chat history, enforced by fine-grained authorization.
 
 ## Auth0 for AI Agents Implementation
 
 This application addresses the three key security requirements from the Auth0 for AI Agents Challenge:
 
-1. **Authenticate the User**: All API endpoints require Auth0 authentication before allowing access to the AI agent
-2. **Control the Tools**: The NVIDIA API key is securely stored as an environment variable, never exposed to users
-3. **Limit Knowledge**: User sessions are isolated - each user can only access their own chat history
+1. **Authenticate the User**: All API endpoints require Auth0 authentication before allowing access to the AI agent.
+2. **Control the Tools**: The NVIDIA API key is securely stored as an environment variable, preventing direct exposure to users. For more advanced tool access control, Auth0's Token Vault could be integrated.
+3. **Limit Knowledge**: User sessions are isolated, ensuring each user can only access their own chat history. This fine-grained authorization prevents sensitive data leakage between users.
 
 ## Tech Stack
 
@@ -81,11 +81,12 @@ To add secrets in Replit:
 
 Once all environment variables are set:
 
-1. The app will automatically start
-2. Click "Run" if needed
-3. Open the web view
-4. Click "Login with Auth0"
-5. After logging in, you can create chats and talk to the AI
+1. The app will automatically start (if running in a development environment like Replit).
+2. For production deployment, use Gunicorn: `gunicorn --bind 0.0.0.0:8000 app:app`
+3. Click "Run" if needed (in development).
+4. Open the web view.
+5. Click "Login with Auth0".
+6. After logging in, you can create chats and talk to the AI.
 
 ## Project Structure
 
@@ -97,7 +98,8 @@ Once all environment variables are set:
 │   ├── index.html      # Frontend HTML
 │   ├── style.css       # Styling
 │   └── script.js       # Frontend JavaScript
-└── README.md           # This file
+├── uploads/            # Directory for uploaded files
+├── README.md           # This file
 ```
 
 ## Security Features
@@ -123,7 +125,7 @@ Once all environment variables are set:
 
 For judges testing this application:
 
-- Create your own Auth0 account to test, or
+- Please create your own Auth0 account to test the full authentication and authorization flow.
 - Contact me for test credentials
 
 ## Challenge Submission
@@ -139,6 +141,11 @@ This project is submitted for the **Auth0 for AI Agents Challenge** on DEV.to.
 
 ## Future Enhancements
 
+- Role-based access control for AI agent capabilities.
+- Integration with Auth0's Token Vault for secure access to external tools.
+- Advanced analytics and monitoring for AI agent interactions.
+- Multi-factor authentication for enhanced security.
+- Customizable chat interface themes.
 - User-specific chat history (currently global)
 - Role-based access control
 - Token scopes for fine-grained permissions
